@@ -1,4 +1,10 @@
 <?php
+/*
+ * A simple live script made by php
+ * @author Jason <master@deamwork.com>
+ * blog: https://www.deamwork.com/
+ */
+
 //Management password
 $livepass = 'thisisatest';
 //site info
