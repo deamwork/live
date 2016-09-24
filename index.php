@@ -7,16 +7,23 @@
 
 //Management password
 $livepass = 'thisisatest';
+
 //site info
 $site_name = 'Deamwork';
 $site_url = 'https://live.deamwork.com/';
 $home_url = 'https://www.deamwork.com/';
+
 //stream server domain or ip
 //$stream_server = '0.0.0.0';
 //$stream_server = 'live.example.com';
 $stream_server = '0.0.0.0';
+
 //live app name
 $live_app = 'live';
+
+//live method: m3u8, rtmp
+$live_method = 'm3u8';
+
 
 /*
  * Following items PLEASE DO NOT MODIFY
@@ -24,6 +31,7 @@ $live_app = 'live';
  */
 $managepass = $_POST['managepass'];
 $live_switch = $_POST['live_switch'];
+$live_method = $_POST['live_method'];
 $lockfile = 'status.lock';
 $islive = getLiveStatus();
 $live_hash = $_POST['live_hash'];
@@ -114,7 +122,6 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
     <head>
         <meta charset="UTF-8">
         <title>Live Controller</title>
-        <script src="//cdn.bootcss.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
         <link href="//cdn.bootcss.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
     </head>
     <body>
@@ -140,19 +147,29 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
     <div class="container theme-showcase" style="margin-top: 30px">
         <div class="page-header">
             <h2><?php echo $site_name; ?> LIVE</h2>
+            <p>Using <?php if ($live_method == "rtmp"){echo "Flash";} else if ($live_method == "m3u8"){echo "HTML5";} ?></p>
         </div>
     <div>
             <form method="post" action="index.php">
                 <label for="managepass">Management password:</label>
                 <input type="password" name="managepass" id="managepass" /><br />
                 <label>Live switch:</label>
-                <input type="radio" name="live_switch" id="live_on" value="on" />On
-                <input type="radio" name="live_switch" id="live_off" value="off" checked="checked" />Off<br />
+                <?php
+                    if($live_switch == 'on') {
+                        echo '<input type="radio" name="live_switch" id="live_on" value="on" checked="checked" />On';
+                        echo '<input type="radio" name="live_switch" id="live_off" value="off" />Off<br />';
+                    }
+                    if($live_switch == 'off') {
+                        echo '<input type="radio" name="live_switch" id="live_on" value="on" />On';
+                        echo '<input type="radio" name="live_switch" id="live_off" value="off" checked="checked" />Off<br />';
+                    }
+                ?>
                 <label for="livehash">Live Hash:</label>
                 <input type="text" name="live_hash" id="livehash" /><br />
                 <input type="submit" value="Update" />
             </form>
         </div>
+        <script src="//cdn.bootcss.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
     </body>
     </html>
 <?php
@@ -166,20 +183,13 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="//cdn.bootcss.com/bootstrap/3.0.3/css/bootstrap.min.css" rel="stylesheet">
         <link href="assets/video-js.min.css" rel="stylesheet">
-    <script src="assets/video.min.js"></script>
+
         <title><?php echo $site_name; ?> LIVE</title>
         <style type="text/css">
             label {font-size: 18px;}
             body {padding: 10px;}
             div.help {line-height: 32px; font-size: 14px;}
         </style>
-        <script language="JavaScript">
-            videojs.setGlobalOptions({
-          flash: {
-            swf: 'assets/video-js.swf'
-          }
-        });
-        </script>
     </head>
     <body>
     <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -196,8 +206,12 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="<?php echo $site_url; ?>">LIVE</a></li>
-                    <li><a href="<?php echo $site_url; ?>?manage=yes" style="color:#222222;">Manage</a></li>
                 </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="<?php echo $site_url; ?>?manage=yes" style="color:#222222;">Manage</a></li>
+                    <li class="active"><p class="navbar-text">Using <?php if ($live_method == "rtmp"){echo "Flash";} else if ($live_method == "m3u8"){echo "HTML5";} ?></p></li>
+                </ul>
+                
             </div>
         </div>
     </div>
@@ -208,8 +222,15 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
     <div class="video" id="Player">
                 <?php
                 if ($islive == true) {
-                    echo '<video id="my-video" class="video-js" controls preload="auto" width="940" height="540" poster="ready_poster.png" data-setup="{}">';
-                    echo '<source src="rtmp://'.$stream_server.'/'.$live_app.'/' . getLiveHash() . '" type="rtmp/m3u8">';
+                    if ($live_method == "rtmp"){
+                        echo '<video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto" width="940" height="540" poster="ready_poster.png" data-setup="{}">';
+                        echo '<source src="rtmp://'.$stream_server.'/'.$live_app.'/' . getLiveHash() . '" type="rtmp/m3u8">';
+                    } else if ($live_method == "m3u8"){
+                        echo '<video id="my-video" width=940 height=540 class="video-js vjs-default-skin vjs-big-play-centered" poster="ready_poster.png" controls data-setup="{}">';
+                        echo '<source src="http://'.$stream_server.'/'.$live_app.'/' . getLiveHash() . '.m3u8" type="application/x-mpegURL">';
+                    } else {
+                        echo "Sorry but the method you provided is not supported. Please check $live_method settings.";
+                    }
                     echo '<p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p></video>';
                 } else {
                     echo '<h1 align="center">Live is OFF</h1>';
@@ -228,6 +249,17 @@ if(isset($_GET['manage']) && $_GET['manage']=='yes'){
     </footer>
     <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
     <script src="//cdn.bootcss.com/bootstrap/3.0.3/js/bootstrap.min.js"></script>
+    <script src="assets/video.min.js"></script>
+    <script src="assets/videojs.hls.min.js"></script>
+    <script language="JavaScript">
+            videojs.setGlobalOptions({
+                flash: {
+                    swf: 'assets/video-js.swf'
+                }
+            });
+            var player = videojs('my-video');
+            player.play();
+        </script>
     </body>
     </html>
 <?php 
